@@ -1,0 +1,137 @@
+﻿using UnityEngine;
+
+public class HeroController2D : MonoBehaviour
+{
+    public Animator animator;
+    public new Rigidbody2D rigidbody;
+
+    public float moveSpeed; //移动速度
+    public float runSpeed;  //奔跑速度
+    public float jumpForce; //跳跃力
+
+    private Vector3 _curSpeed;
+    private bool _jumping;
+    private bool _running;
+
+    void Start()
+    {
+        animator = animator == null ? GetComponentInChildren<Animator>() : animator;
+        rigidbody = rigidbody == null ? GetComponentInChildren<Rigidbody2D>() : rigidbody;
+    }
+
+    void Update()
+    {
+        UpdateState();
+
+        UpdatePosition();
+        UpdateScale();
+
+
+        ClearState();
+    }
+
+    void FixedUpdate()
+    {
+        UpdateRigidbody();
+        UpdateAnimation();
+
+    }
+
+    void UpdatePosition()
+    {
+        var newSpeed = _curSpeed * Time.deltaTime;
+        transform.Translate(newSpeed);
+
+    }
+
+    void UpdateScale()
+    {
+        if (_curSpeed.x < 0f)
+        {
+            var oldLocalScale = transform.localScale;
+            oldLocalScale.x = -Mathf.Abs(oldLocalScale.x);
+            transform.localScale = oldLocalScale;
+        }
+        else if (_curSpeed.x > 0f)
+        {
+            var oldLocalScale = transform.localScale;
+            oldLocalScale.x = Mathf.Abs(oldLocalScale.x);
+            transform.localScale = oldLocalScale;
+        }
+
+    }
+
+    void UpdateState()
+    {
+        int moveDir = 0;
+        if (Input.GetAxis("Horizontal") < 0f)
+        {
+            moveDir = -1;
+        }
+        else if (Input.GetAxis("Horizontal") > 0f)
+        {
+            moveDir = 1;
+        }
+
+        if (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift))
+        {
+            _curSpeed.x = runSpeed * moveDir;
+            _running = true;
+        }
+        else
+        {
+            _curSpeed.x = moveSpeed * moveDir;
+            _running = false;
+        }
+
+        if (Input.GetKeyDown(KeyCode.W))
+        {
+            _jumping = true;
+        }
+        else
+        {
+            //如果再次回到平台上,表示跳跃结束
+        }
+
+    }
+
+    void UpdateRigidbody()
+    {
+        if (rigidbody == null)
+            return;
+
+
+    }
+
+
+    void UpdateAnimation()
+    {
+        if (animator == null)
+            return;
+
+        if (Mathf.Approximately(_curSpeed.x, 0f))
+        {
+            animator.Play("Idle");
+        }
+        else
+        {
+            if (_running)
+            {
+                animator.Play("Run");
+            }
+            else
+            {
+                animator.Play("Walk");
+            }
+        }
+    }
+
+
+    void ClearState()
+    {
+
+    }
+}
+
+
+
