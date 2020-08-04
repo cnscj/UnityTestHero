@@ -5,9 +5,9 @@ public class HeroController2D : MonoBehaviour
     public Animator animator;
     public new Rigidbody2D rigidbody;
 
-    public float moveSpeed; //移动速度
-    public float runSpeed;  //奔跑速度
-    public float jumpForce; //跳跃力
+    public float moveSpeed = 5; //移动速度
+    public float runSpeed = 8;  //奔跑速度
+    public float jumpForce = 3; //跳跃力
 
     private Vector3 _curSpeed;
     private bool _jumping;
@@ -21,10 +21,8 @@ public class HeroController2D : MonoBehaviour
 
     void Update()
     {
-        UpdateState();
-
-        UpdatePosition();
-        UpdateScale();
+        UpdateInput();
+        UpdateTransform();
 
 
         ClearState();
@@ -37,31 +35,7 @@ public class HeroController2D : MonoBehaviour
 
     }
 
-    void UpdatePosition()
-    {
-        var newSpeed = _curSpeed * Time.deltaTime;
-        transform.Translate(newSpeed);
-
-    }
-
-    void UpdateScale()
-    {
-        if (_curSpeed.x < 0f)
-        {
-            var oldLocalScale = transform.localScale;
-            oldLocalScale.x = -Mathf.Abs(oldLocalScale.x);
-            transform.localScale = oldLocalScale;
-        }
-        else if (_curSpeed.x > 0f)
-        {
-            var oldLocalScale = transform.localScale;
-            oldLocalScale.x = Mathf.Abs(oldLocalScale.x);
-            transform.localScale = oldLocalScale;
-        }
-
-    }
-
-    void UpdateState()
+    void UpdateInput()
     {
         int moveDir = 0;
         if (Input.GetAxis("Horizontal") < 0f)
@@ -95,6 +69,26 @@ public class HeroController2D : MonoBehaviour
 
     }
 
+    void UpdateTransform()
+    {
+        var newSpeed = _curSpeed * Time.deltaTime;
+        transform.Translate(newSpeed);
+
+        if (newSpeed.x < 0f)
+        {
+            var oldLocalScale = transform.localScale;
+            oldLocalScale.x = -Mathf.Abs(oldLocalScale.x);
+            transform.localScale = oldLocalScale;
+        }
+        else if (newSpeed.x > 0f)
+        {
+            var oldLocalScale = transform.localScale;
+            oldLocalScale.x = Mathf.Abs(oldLocalScale.x);
+            transform.localScale = oldLocalScale;
+        }
+
+    }
+
     void UpdateRigidbody()
     {
         if (rigidbody == null)
@@ -109,21 +103,8 @@ public class HeroController2D : MonoBehaviour
         if (animator == null)
             return;
 
-        if (Mathf.Approximately(_curSpeed.x, 0f))
-        {
-            animator.Play("Idle");
-        }
-        else
-        {
-            if (_running)
-            {
-                animator.Play("Run");
-            }
-            else
-            {
-                animator.Play("Walk");
-            }
-        }
+        animator.SetBool("Running", _running);
+        animator.SetInteger("Speed", (int)_curSpeed.x); 
     }
 
 
