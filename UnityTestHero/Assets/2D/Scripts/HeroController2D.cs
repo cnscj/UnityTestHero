@@ -2,21 +2,25 @@
 
 public class HeroController2D : MonoBehaviour
 {
-    public Animator animator;
+    public Animator[] animators;
     public new Rigidbody2D rigidbody;
 
-    public float moveSpeed = 5; //移动速度
-    public float runSpeed = 8;  //奔跑速度
+    public float moveSpeed = 1; //移动速度
+    public float runSpeed = 3;  //奔跑速度
     public float jumpForce = 3; //跳跃力
+    public int jumpCount = 1;   //跳跃次数
 
     private Vector3 _curSpeed;
+    private int _curJumpCount;
     private bool _jumping;
     private bool _running;
 
     void Start()
     {
-        animator = animator == null ? GetComponentInChildren<Animator>() : animator;
+        animators = (animators == null || animators.Length <= 0) ? GetComponentsInChildren<Animator>() : animators;
         rigidbody = rigidbody == null ? GetComponentInChildren<Rigidbody2D>() : rigidbody;
+
+        _curJumpCount = jumpCount;
     }
 
     void Update()
@@ -31,21 +35,24 @@ public class HeroController2D : MonoBehaviour
     void FixedUpdate()
     {
         UpdateRigidbody();
-        UpdateAnimation();
+        UpdateAnimator();
 
     }
 
     void UpdateInput()
     {
+        var oldSpeed = _curSpeed;
+        _curSpeed = Vector3.zero;
         int moveDir = 0;
-        if (Input.GetAxis("Horizontal") < 0f)
+        if (Input.GetKey(KeyCode.A))
         {
             moveDir = -1;
         }
-        else if (Input.GetAxis("Horizontal") > 0f)
+        else if (Input.GetKey(KeyCode.D))
         {
             moveDir = 1;
         }
+
 
         if (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift))
         {
@@ -60,33 +67,24 @@ public class HeroController2D : MonoBehaviour
 
         if (Input.GetKeyDown(KeyCode.W))
         {
-            _jumping = true;
+            if (!_jumping || _jumping && _curJumpCount > 0)
+            {
+                _curSpeed.y = jumpForce;
+                _curJumpCount--;
+                _jumping = true;
+            }
         }
-        else
-        {
-            //如果再次回到平台上,表示跳跃结束
-        }
-
     }
 
     void UpdateTransform()
     {
-        var newSpeed = _curSpeed * Time.deltaTime;
-        transform.Translate(newSpeed);
-
-        if (newSpeed.x < 0f)
+        if (!Mathf.Approximately(_curSpeed.x, 0f))
         {
-            var oldLocalScale = transform.localScale;
-            oldLocalScale.x = -Mathf.Abs(oldLocalScale.x);
-            transform.localScale = oldLocalScale;
+            transform.localScale = new Vector3(
+                Mathf.Sign(_curSpeed.x),
+                transform.localScale.y,
+                transform.localScale.z);
         }
-        else if (newSpeed.x > 0f)
-        {
-            var oldLocalScale = transform.localScale;
-            oldLocalScale.x = Mathf.Abs(oldLocalScale.x);
-            transform.localScale = oldLocalScale;
-        }
-
     }
 
     void UpdateRigidbody()
@@ -94,17 +92,64 @@ public class HeroController2D : MonoBehaviour
         if (rigidbody == null)
             return;
 
+        var horizontalSpeed = _curSpeed.x;
+        var verticalSpeed = rigidbody.velocity.y;
 
+        if (!Mathf.Approximately(_curSpeed.y,0f))
+        {
+            verticalSpeed = _curSpeed.y;
+        }
+
+        if (Mathf.Approximately(rigidbody.velocity.y, 0f))
+        {
+            _curJumpCount = jumpCount;
+            _jumping = false;
+        }
+
+        rigidbody.velocity = new Vector2(horizontalSpeed, verticalSpeed);
     }
 
-
-    void UpdateAnimation()
+    void UpdateAnimator()
     {
-        if (animator == null)
+        if (animators == null)
             return;
 
-        animator.SetBool("Running", _running);
-        animator.SetInteger("Speed", (int)_curSpeed.x); 
+        if (animators.Length <= 0)
+            return;
+
+        if (Mathf.Approximately(rigidbody.velocity.x, 0f) && Mathf.Approximately(rigidbody.velocity.y, 0f))
+        {
+            foreach(var animator in animators) animator.Play("Idle");
+        }
+        else
+        {
+            if (!Mathf.Approximately(rigidbody.velocity.y, 0f))
+            {
+                if (_jumping)
+                {
+                    if (rigidbody.velocity.y > 0f)
+                    {
+                        foreach (var animator in animators) animator.Play("JumpUp");
+                    }
+                    else if (rigidbody.velocity.y < 0f)
+                    {
+                        foreach (var animator in animators) animator.Play("JumpFull");
+                    }
+                }
+            }
+            else
+            {
+                if (_running)
+                {
+                    foreach (var animator in animators) animator.Play("Run");
+                }
+                else
+                {
+                    foreach (var animator in animators) animator.Play("Walk");
+                }
+            }
+            
+        }
     }
 
 
